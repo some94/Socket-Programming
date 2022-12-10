@@ -1,6 +1,7 @@
 ﻿using System.Net.Sockets;
 using System.Net;
 using System.Text;
+using Microsoft.VisualBasic;
 
 namespace AServer
 {
@@ -22,12 +23,20 @@ namespace AServer
 
 
         private Dictionary<string, Socket> connectedClients = new();        // 소켓 값이 들어간다
+        private Dictionary<string, Socket> connectedManagers = new();
 
         public Dictionary<string, Socket> ConnectedClients      
         {
             get => connectedClients;
             set => connectedClients = value;
         }
+
+        public Dictionary<string, Socket> connectedManagers
+        {
+            get => connectedManagers;
+            set => connectedManagers = value;
+        }
+
 
         private Socket ServerSocket;
 
@@ -49,7 +58,7 @@ namespace AServer
         {
             ServerSocket.Bind(EndPoint);
             ServerSocket.Listen(100);
-            Console.WriteLine("Waiting connection request.");
+            Console.WriteLine("유저를 기다리는 중입니다...");
 
             Accept();
         }
@@ -60,7 +69,7 @@ namespace AServer
             do
             {
                 Socket client = ServerSocket.Accept();
-                Console.WriteLine($"Client accepted: {client.RemoteEndPoint}.");
+                Console.WriteLine($"유저가 접속하였습니다!: {client.RemoteEndPoint}");
 
                 SocketAsyncEventArgs args = new SocketAsyncEventArgs();
                 args.Completed += new EventHandler<SocketAsyncEventArgs>(Received);
@@ -72,13 +81,20 @@ namespace AServer
 
         void Disconnected(Socket client)
         {
-            Console.WriteLine($"Client disconnected: {client.RemoteEndPoint}.");
+            Console.WriteLine($"유저가 방을 떠났습니다.: {client.RemoteEndPoint}");
             foreach (KeyValuePair<string, Socket> clients in connectedClients)
             {
                 if (clients.Value == client)
                 {
                     ConnectedClients.Remove(clients.Key);
                     clientNum--;
+                }
+            }
+            foreach (KeyValuePair<string, Socket> clients in connectedManagers)
+            {
+                if (clients.Value == client)
+                {
+                    ConnectedManagers.Remove(clients.Key);
                 }
             }
             client.Disconnect(false);
@@ -113,43 +129,49 @@ namespace AServer
         {
             string m = Encoding.Unicode.GetString(bytes);
             string[] tokens = m.Split(':');
+            string message;
+
             string fromID;
             string toID;
+
             string code = tokens[0];
 
             if (code.Equals("ID"))
             {
                 clientNum++;
                 fromID = tokens[1].Trim();
-                Console.WriteLine("[접속{0}]ID:{1},{2}", 
-                    clientNum, fromID, s.RemoteEndPoint);
+                Console.WriteLine("[{0}번 유저] ID: {1}, {2}", clientNum, fromID, s.RemoteEndPoint);
 
                 connectedClients.Add(fromID, s);
-                s.Send(Encoding.Unicode.GetBytes("ID_REG_Success:"));
-                Broadcast(s, m);
+                connectedManagers.Add(fromID, s);
+
+                message = $"ID: {fromID}:유저가 끝말잇기에 참가하였습니다.";
+                s.Send(Encoding.Unicode.GetBytes("끝말잇기 채팅방에 입장하였습니다!"));
+                Broadcast(s, message);
             }
 
-            else if (tokens[0].Equals("BR"))
+            else if (code.Equals("BR"))
             {
                 fromID = tokens[1].Trim();
                 string msg = tokens[2];
-                Console.WriteLine("[전체]{0}:{1}", fromID, msg);
-
-                Broadcast(s, m);
-                s.Send(Encoding.Unicode.GetBytes("BR_Success:"));
+                Console.WriteLine("{0} 유저의 답: {1}", fromID, msg)
+                Broadcast(s, msg);
+                s.Send(Encoding.Unicode.GetBytes("BR_Success!"));
             }
 
-            else if (code.Equals("TO"))
+            else if (code.Equals("KICK"))
             {
-                fromID = tokens[1].Trim();
-                toID = tokens[2].Trim();
-                string msg = tokens[3];
-                string rMsg = "[From:" + fromID + "][TO:" + toID + "]" + msg;
-                Console.WriteLine(rMsg);
+                fromID= tokens[1].Trim();
+                string msg = tokens[2];
+                message = msg + "님이 강퇴당했습니다.";
 
+                connectedClients[msg].Send(Encoding.Unicode.GetBytes("관리자에 의해 강퇴당했습니다."));
+                Console.WriteLine($"유저가 방을 떠났습니다.: {connectedClients[msg].RemoteEndPoint}");
 
-                SendTo(toID, m);
-                s.Send(Encoding.Unicode.GetBytes("To_Success:"));
+                connectedClients.Remove(msg);
+                clientNum--;
+                Broadcast(s, message);
+                s.Send(Encoding.Unicode.GetBytes("강퇴 당했습니다."));
             }
 
             else
@@ -163,15 +185,21 @@ namespace AServer
         {
             Socket socket;
             byte[] bytes = Encoding.Unicode.GetBytes(msg);
-            if (connectedClients.ContainsKey(id))
+
+            if (connectedManagers.ContainsKey(id))
             {
-                connectedClients.TryGetValue(id, out socket!);
-                try { socket.Send(bytes); } catch { }
+                connectedManagers.TryGetValue(id, out socket!);
+                try
+                {
+                    socket.Send(bytes);
+                    socket.Send(Encoding.Unicode.GetBytes("[" + id + "] 유저에게 메시지를 전달하였습니다."));
+                }
+                catch { }
             }
         }
 
 
-        void Broadcast(Socket s, string msg) // 5-2ㅡ모든 클라이언트에게 Send
+        void Broadcast(Socket s, string msg) // 모든 클라이언트에게 Send
         {
             byte[] bytes = Encoding.Unicode.GetBytes(msg);
 
@@ -179,7 +207,7 @@ namespace AServer
             {
                 try
                 {
-                    //5-2 send
+                    // send
                     if (s != client.Value)
                         client.Value.Send(bytes);
                 }
@@ -189,6 +217,5 @@ namespace AServer
                 }
             }
         }
-
     }
 }
