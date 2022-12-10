@@ -69,7 +69,6 @@ namespace AClient
                 str = str.Replace("\0", "");
                 Console.WriteLine("수신:" + str);
 
-
                 SocketAsyncEventArgs args = new SocketAsyncEventArgs();
                 args.Completed += new EventHandler<SocketAsyncEventArgs>(Received);
                 ClientSocket.ReceiveAsync(args);
@@ -86,11 +85,9 @@ namespace AClient
             byte[] dataID;
             Console.WriteLine("ID를 입력하세요");
             string nameID = Console.ReadLine()!;
-            //
             string message = "ID:" + nameID + ":";
             dataID = Encoding.Unicode.GetBytes(message);
             clientSocket.Send(dataID);
-            //
 
             Console.WriteLine("특정 사용자에게 보낼 때는 사용자ID:메시지 로 입력하시고\n" +
                 "브로드캐스트하려면 BR:메시지 를 입력하세요");
@@ -102,55 +99,21 @@ namespace AClient
                 string m;
                 if (tokens[0].Equals("BR"))
                 {
-                    //
                     m = "BR:" + nameID + ":" + tokens[1] + ":";
 
                     data = Encoding.Unicode.GetBytes(m);
                     Console.WriteLine("[전체전송]{0}", tokens[1]);
                     try { ClientSocket.Send(data); } catch { }
                 }
-                else if (tokens[0].Equals("File"))
-                {
-                    SendFile(tokens[1]);
-                }
+
                 else //  (tokens[0].Equals("TO"))
                 {
-                    //
                     m = "TO:" + nameID + ":" + tokens[0] + ":" + tokens[1] + ":";
                     data = Encoding.Unicode.GetBytes(m);
                     Console.WriteLine("[{0}에게 전송]:{1}", tokens[0], tokens[1]);
                     try { ClientSocket.Send(data); } catch { }
                 }
-
-                
-
-
             } while (true);
         }
-        void SendFile(string filename)
-        {
-            FileInfo fi = new FileInfo(filename);   
-            string fileLength = fi.Length.ToString();
-
-            byte[] bDts = Encoding.Unicode.GetBytes
-                ("File:" + filename + ":" + fileLength + ":");
-            clientSocket.Send(bDts);
-
-            byte[] bDtsRx = new byte[4096];
-            FileStream fs = new FileStream(filename, 
-                FileMode.Open, FileAccess.Read, 
-                FileShare.None);
-            long received = 0;
-            while (received < fi.Length)
-            {
-                received += fs.Read(bDtsRx, 0, 4096);
-                clientSocket.Send(bDtsRx);
-                Array.Clear(bDtsRx);
-            }
-            fs.Close();
-
-            Console.WriteLine("파일 송신 종료");
-        }
-
     }
 }
