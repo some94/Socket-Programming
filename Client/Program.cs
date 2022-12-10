@@ -67,7 +67,7 @@ namespace AClient
 
                 string str = Encoding.Unicode.GetString(data);
                 str = str.Replace("\0", "");
-                Console.WriteLine("수신:" + str);
+                Console.WriteLine("수신:" + str); // 여기서 Server 처럼 Split 해서 포멧 바꾸면 됨
 
                 SocketAsyncEventArgs args = new SocketAsyncEventArgs();
                 args.Completed += new EventHandler<SocketAsyncEventArgs>(Received);
