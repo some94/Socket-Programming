@@ -23,20 +23,12 @@ namespace AServer
 
 
         private Dictionary<string, Socket> connectedClients = new();        // 소켓 값이 들어간다
-        private Dictionary<string, Socket> connectedManagers = new();
 
         public Dictionary<string, Socket> ConnectedClients      
         {
             get => connectedClients;
             set => connectedClients = value;
         }
-
-        public Dictionary<string, Socket> connectedManagers
-        {
-            get => connectedManagers;
-            set => connectedManagers = value;
-        }
-
 
         private Socket ServerSocket;
 
@@ -69,7 +61,7 @@ namespace AServer
             do
             {
                 Socket client = ServerSocket.Accept();
-                Console.WriteLine($"유저가 접속하였습니다!: {client.RemoteEndPoint}");
+                Console.WriteLine($"유저가 접속하였습니다! - {client.RemoteEndPoint}");
 
                 SocketAsyncEventArgs args = new SocketAsyncEventArgs();
                 args.Completed += new EventHandler<SocketAsyncEventArgs>(Received);
@@ -81,7 +73,7 @@ namespace AServer
 
         void Disconnected(Socket client)
         {
-            Console.WriteLine($"유저가 방을 떠났습니다.: {client.RemoteEndPoint}");
+            Console.WriteLine($"유저가 방을 떠났습니다 - {client.RemoteEndPoint}.");
             foreach (KeyValuePair<string, Socket> clients in connectedClients)
             {
                 if (clients.Value == client)
@@ -90,13 +82,7 @@ namespace AServer
                     clientNum--;
                 }
             }
-            foreach (KeyValuePair<string, Socket> clients in connectedManagers)
-            {
-                if (clients.Value == client)
-                {
-                    ConnectedManagers.Remove(clients.Key);
-                }
-            }
+
             client.Disconnect(false);
             client.Close();
         }
@@ -140,38 +126,67 @@ namespace AServer
             {
                 clientNum++;
                 fromID = tokens[1].Trim();
-                Console.WriteLine("[{0}번 유저] ID: {1}, {2}", clientNum, fromID, s.RemoteEndPoint);
+                Console.WriteLine("[{0}번 유저] ID: {1} - {2}", clientNum, fromID, s.RemoteEndPoint);
 
                 connectedClients.Add(fromID, s);
-                connectedManagers.Add(fromID, s);
 
-                message = $"ID: {fromID}:유저가 끝말잇기에 참가하였습니다.";
+                message = $"ID: {fromID} 유저가 끝말잇기에 참가하였습니다.";
                 s.Send(Encoding.Unicode.GetBytes("끝말잇기 채팅방에 입장하였습니다!"));
                 Broadcast(s, message);
             }
 
             else if (code.Equals("BR"))
             {
-                fromID = tokens[1].Trim();
+                fromID= tokens[1].Trim();
                 string msg = tokens[2];
-                Console.WriteLine("{0} 유저의 답: {1}", fromID, msg)
-                Broadcast(s, msg);
-                s.Send(Encoding.Unicode.GetBytes("BR_Success!"));
+                Console.WriteLine("{0} 유저의 답: {1}", fromID, msg);
+                m = "[" + fromID+ "]님의 응답: " + msg;
+                Broadcast(s, m);
+                s.Send(Encoding.Unicode.GetBytes("끝말잇기 응답 성공"));
+            }
+
+            else if (code.Equals("TO"))
+            {
+                fromID = tokens[1].Trim();
+                toID = tokens[2].Trim();
+                string msg = tokens[3];
+                string rMsg = "[" + fromID + "]님이 [" + toID + "]님에게 귓속말을 전송하였습니다. \n"
+                    + "귓속말 내용: " + msg;
+                Console.WriteLine(rMsg);
+
+                SendTo(toID, m);
+                s.Send(Encoding.Unicode.GetBytes("귓속말 전송 성공"));
             }
 
             else if (code.Equals("KICK"))
             {
-                fromID= tokens[1].Trim();
-                string msg = tokens[2];
-                message = msg + "님이 강퇴당했습니다.";
-
-                connectedClients[msg].Send(Encoding.Unicode.GetBytes("관리자에 의해 강퇴당했습니다."));
-                Console.WriteLine($"유저가 방을 떠났습니다.: {connectedClients[msg].RemoteEndPoint}");
-
-                connectedClients.Remove(msg);
-                clientNum--;
+                Socket socket;
+                toID = tokens[1];
+                try
+                {
+                    if (connectedClients.ContainsKey(toID))
+                    {
+                        connectedClients.TryGetValue(toID, out socket!);
+                        foreach (KeyValuePair<string, Socket> clients in connectedClients)
+                        {
+                            if (clients.Value == socket)
+                            {
+                                ConnectedClients.Remove(clients.Key);
+                                clientNum--;
+                            }
+                        }
+                        socket.Disconnect(false);
+                        socket.Close();
+                    }
+                } catch (Exception ex)
+                {
+                    Console.WriteLine(ex.ToString());
+                }
+               
+                message = toID+"님이 강퇴 처리 되어 서버를 떠났습니다.";
+                Console.WriteLine(message);
                 Broadcast(s, message);
-                s.Send(Encoding.Unicode.GetBytes("강퇴 당했습니다."));
+                s.Send(Encoding.Unicode.GetBytes("강퇴 요청 처리 완료"));
             }
 
             else
@@ -180,24 +195,21 @@ namespace AServer
             }
         }
 
-
         void SendTo(string id, string msg)
         {
             Socket socket;
             byte[] bytes = Encoding.Unicode.GetBytes(msg);
+            string m = Encoding.Unicode.GetString(bytes);
+            string[] tokens = m.Split(":");
+            string message = tokens[1] + "님의 귓속말: " + tokens[3];
+            byte[] data = Encoding.Unicode.GetBytes(message);
 
-            if (connectedManagers.ContainsKey(id))
+            if (connectedClients.ContainsKey(id))
             {
-                connectedManagers.TryGetValue(id, out socket!);
-                try
-                {
-                    socket.Send(bytes);
-                    socket.Send(Encoding.Unicode.GetBytes("[" + id + "] 유저에게 메시지를 전달하였습니다."));
-                }
-                catch { }
+                connectedClients.TryGetValue(id, out socket!);
+                try { socket.Send(data); } catch { }
             }
         }
-
 
         void Broadcast(Socket s, string msg) // 모든 클라이언트에게 Send
         {
