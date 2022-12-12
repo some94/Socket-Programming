@@ -1,9 +1,8 @@
-﻿using System.Net.Sockets;
-using System.Net;
+﻿using System.Net;
+using System.Net.Sockets;
 using System.Text;
-using Microsoft.VisualBasic;
 
-namespace AServer
+namespace Server
 {
     public class Server
     {
