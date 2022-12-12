@@ -32,7 +32,7 @@ namespace Client
         }
         private readonly IPEndPoint EndPoint = new(IPAddress.Parse("127.0.0.1"), 5001);
 
-        public Client()
+        Client()
         {
             ClientSocket = new(
                 AddressFamily.InterNetwork,
@@ -89,7 +89,7 @@ namespace Client
 
             Console.WriteLine("[{0}]님 환영합니다! 아래의 메시지 포맷을 참고하세요. \n\n"
                 + "--------------------------------------------------------------------\n"
-                + "1. 도움말 보기 --> SOS:본인ID \n"
+                + "1. 도움말 보기 --> HELP:본인ID \n"
                 + "2. 채팅방 유저 리스트 보기 --> LIST:본인ID \n"
                 + "3. 귓속말 보내기 --> TO:상대방ID:메시지 \n"
                 + "4. 전체 전송 메시지 보내기 --> BR:메시지 내용 \n"
@@ -103,13 +103,13 @@ namespace Client
                 string[] tokens = msg.Split(':');
                 string m;
 
-                if (tokens[0].Equals("SOS"))
+                if (tokens[0].Equals("HELP"))
                 {
-                    m = "SOS:" + tokens[1];
+                    m = "HELP:" + tokens[1];
                     data = Encoding.Unicode.GetBytes(m);
                     Console.WriteLine("[{0}]님 환영합니다! 아래의 메시지 포맷을 참고하세요. \n\n"
                 + "--------------------------------------------------------------------\n"
-                + "1. 도움말 보기 --> SOS:본인ID \n"
+                + "1. 도움말 보기 --> HELP:본인ID \n"
                 + "2. 채팅방 유저 리스트 보기 --> LIST:본인ID \n"
                 + "3. 귓속말 보내기 --> TO:상대방ID:메시지 \n"
                 + "4. 전체 전송 메시지 보내기 --> BR:메시지 내용 \n"
@@ -137,7 +137,7 @@ namespace Client
 
                 else if (tokens[0].Equals("BR"))
                 {
-                    m = "BR: " + nameID + ": " + tokens[1];
+                    m = "BR:" + nameID + ": " + tokens[1];
                     data = Encoding.Unicode.GetBytes(m);
                     Console.WriteLine("[전체 전송]{0}", tokens[1]);
                     try { ClientSocket.Send(data); } catch { }
@@ -145,9 +145,9 @@ namespace Client
 
                 else if (tokens[0].Equals("EXIT"))
                 {
-                    m = "TO:" + nameID + ":" + tokens[1] + ":" + tokens[2];
+                    m = "EXIT:" + tokens[1];
                     data = Encoding.Unicode.GetBytes(m);
-                    Console.WriteLine("[{0}님에게 귓속말 전송 완료] - 보낸 내용: {1}", tokens[1].Trim(), tokens[2]);
+                    Console.WriteLine("=========채팅방에서 나왔습니다.=========");
                     try { ClientSocket.Send(data); } catch { }
                 }
 
