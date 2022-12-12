@@ -140,7 +140,7 @@ namespace Server
                 Broadcast(s, message);
             }
 
-            else if (code.Equals("SOS"))
+            else if (code.Equals("HELP"))
             {
                 fromID = tokens[1];
                 Console.WriteLine("\n{0} 유저가 도움말을 요청하였습니다.", fromID);
@@ -171,15 +171,30 @@ namespace Server
 
             else if (code.Equals("TO"))
             {
-                fromID = tokens[1];
-                toID = tokens[2];
-                string msg = tokens[3];
-                string rMsg = "[" + fromID + "]님이 [" + toID + "]님에게 귓속말을 전송하였습니다. \n"
-                    + "귓속말 내용: " + msg;
-                Console.WriteLine(rMsg);
+                try
+                {
+                    fromID = tokens[1];
+                    toID = tokens[2];
+                    string msg = tokens[3];
+                    if (connectedClients.ContainsKey(toID))
+                    {
+                        string rMsg = "\n[" + fromID + "]님이 [" + toID + "]님에게 귓속말을 전송하였습니다. \n"
+                                      + "귓속말 내용: " + msg;
+                        Console.WriteLine(rMsg);
 
-                SendTo(toID, m);
-                s.Send(Encoding.Unicode.GetBytes("귓속말 전송 성공"));
+                        SendTo(toID, m);
+                        s.Send(Encoding.Unicode.GetBytes("귓속말 전송 성공"));
+                    }
+                    else
+                    {
+                        s.Send(Encoding.Unicode.GetBytes("오류 메시지! - 유저가 존재하지 않습니다."));
+                        Console.WriteLine("{0} 유저는 존재하지 않습니다!", toID);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.ToString());
+                }
             }
 
             else if (code.Equals("BR"))
@@ -191,6 +206,16 @@ namespace Server
                 Broadcast(s, m);
                 s.Send(Encoding.Unicode.GetBytes("전체 전송 성공"));
             }
+            
+            else if (code.Equals("EXIT"))
+            {
+                fromID = tokens[1];
+                Console.WriteLine("{0} 유저가 채팅방을 나갔습니다.", fromID);
+                m = "유저 [" + fromID + "] 님이 채팅방을 떠났습니다.";
+                Broadcast(s, m);
+                connectedClients.Remove(fromID);
+                clientNum--;
+            }
 
             else if (code.Equals("KICK"))
             {
@@ -201,44 +226,15 @@ namespace Server
                     connectedClients[kickID].Send(Encoding.Unicode.GetBytes("강퇴당했습니다."));
                     connectedClients.Remove(kickID);
                     clientNum--;
+                    Console.WriteLine(kickMsg);
                     Broadcast(s, kickMsg);
                     s.Send(Encoding.Unicode.GetBytes("강퇴 처리 완료"));
+                    
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine(ex.ToString());
                 }
-                /* Socket socket;
-                string kickID = tokens[1];
-                try
-                {
-                    if (connectedClients.ContainsKey(kickID))
-                    {
-                        connectedClients.TryGetValue(kickID, out socket!);
-                        foreach (KeyValuePair<string, Socket> clients in connectedClients)
-                        {
-                            if (clients.Value == socket)
-                            {
-                                ConnectedClients.Remove(clients.Key);
-                                clientNum--;
-                                socket.Disconnect(false);
-                                socket.Close();
-                            }
-                        }
-                        message = kickID + "님이 강퇴 처리 되어 서버를 떠났습니다.";
-                        Console.WriteLine(message);
-                        Broadcast(s, message);
-                        s.Send(Encoding.Unicode.GetBytes("강퇴 요청 처리 완료"));
-                    }
-                    else
-                    {
-                        Console.WriteLine("강퇴할 ID를 가진 사용자가 존재하지 않습니다.");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex.ToString());
-                } */
             }
 
             else
