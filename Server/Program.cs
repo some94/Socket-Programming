@@ -136,7 +136,7 @@ namespace Server
                 connectedClients.Add(fromID, s);
 
                 message = $"ID: {fromID} 유저가 채팅방에 참가하였습니다.";
-                s.Send(Encoding.Unicode.GetBytes("채팅방에 입장하였습니다!"));
+                s.Send(Encoding.Unicode.GetBytes("채팅방 입장 성공"));
                 Broadcast(s, message);
             }
 
@@ -201,8 +201,8 @@ namespace Server
             {
                 fromID = tokens[1];
                 string msg = tokens[2];
-                Console.WriteLine("{0} 유저의 메시지: {1}", fromID, msg);
-                m = "[" + fromID + "]님의 메시지: " + msg;
+                Console.WriteLine("{0} 유저의 전체 메시지: {1}", fromID, msg);
+                m = "[" + fromID + "]님의 전체 메시지: " + msg;
                 Broadcast(s, m);
                 s.Send(Encoding.Unicode.GetBytes("전체 전송 성공"));
             }
@@ -213,6 +213,7 @@ namespace Server
                 Console.WriteLine("{0} 유저가 채팅방을 나갔습니다.", fromID);
                 m = "유저 [" + fromID + "] 님이 채팅방을 떠났습니다.";
                 Broadcast(s, m);
+                s.Send(Encoding.Unicode.GetBytes("채팅방 퇴장 성공"));
                 connectedClients.Remove(fromID);
                 clientNum--;
             }

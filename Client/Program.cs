@@ -83,7 +83,7 @@ namespace Client
             Console.WriteLine("사용하실 ID를 입력해주세요.");
 
             string nameID = Console.ReadLine()!;
-            string message = "ID:" + nameID + ":";
+            string message = "ID:" + nameID;
             dataID = Encoding.Unicode.GetBytes(message);
             clientSocket.Send(dataID);
 
@@ -91,8 +91,8 @@ namespace Client
                 + "--------------------------------------------------------------------\n"
                 + "1. 도움말 보기 --> HELP:본인ID \n"
                 + "2. 채팅방 유저 리스트 보기 --> LIST:본인ID \n"
-                + "3. 귓속말 보내기 --> TO:상대방ID:메시지 \n"
-                + "4. 전체 전송 메시지 보내기 --> BR:메시지 내용 \n"
+                + "3. 귓속말 보내기 --> TO:상대방ID:보낼 메시지 내용\n"
+                + "4. 전체 전송 메시지 보내기 --> BR:보낼 메시지 내용 \n"
                 + "5. 채팅방 나가기 --> EXIT:본인ID \n"
                 + "6. 강퇴 하기 --> KICK:강퇴할 상대방ID\n"
                 + "--------------------------------------------------------------------\n\n", nameID.Trim());
