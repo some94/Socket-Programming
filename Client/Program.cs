@@ -64,7 +64,7 @@ namespace Client
 
                 string str = Encoding.Unicode.GetString(data);
                 str = str.Replace("\0", "").Trim();
-                Console.WriteLine("-" + str); // 여기서 Server 처럼 Split 해서 포멧 바꾸면 됨
+                Console.WriteLine("- " + str);
 
                 SocketAsyncEventArgs args = new SocketAsyncEventArgs();
                 args.Completed += new EventHandler<SocketAsyncEventArgs>(Received);
@@ -79,7 +79,7 @@ namespace Client
 
         void Send()
         {
-            byte[] dataID; // 여기에 사용자가 입력한 메시지 포맷이 들어감
+            byte[] dataID;
             Console.WriteLine("사용하실 ID를 입력해주세요.");
 
             string nameID = Console.ReadLine()!;

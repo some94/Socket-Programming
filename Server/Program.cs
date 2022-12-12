@@ -12,7 +12,7 @@ namespace Server
         {
             try
             {
-                new Server().Init();        // 서버 시작
+                new Server().Init();
             }
             catch (Exception e)
             {
@@ -21,7 +21,7 @@ namespace Server
         }
 
 
-        private Dictionary<string, Socket> connectedClients = new();        // 소켓 값이 들어간다
+        private Dictionary<string, Socket> connectedClients = new();
 
         public Dictionary<string, Socket> ConnectedClients
         {
@@ -35,7 +35,7 @@ namespace Server
 
         int clientNum;
         
-        Server()        // new Server 하는 순간 Server 생성자가 호출
+        Server()
         {
             ServerSocket = new(
                 AddressFamily.InterNetwork,
@@ -246,9 +246,7 @@ namespace Server
         void SendTo(string id, string msg)
         {
             Socket socket;
-            byte[] bytes = Encoding.Unicode.GetBytes(msg);
-            string m = Encoding.Unicode.GetString(bytes);
-            string[] tokens = m.Split(":");
+            string[] tokens = msg.Split(":");
             for (int i = 0; i < tokens.Length; i++)
             {
                 tokens[i] = tokens[i].Replace("\0", "").Trim();
@@ -263,7 +261,7 @@ namespace Server
             }
         }
 
-        void Broadcast(Socket s, string msg) // 모든 클라이언트에게 Send
+        void Broadcast(Socket s, string msg)
         {
             byte[] bytes = Encoding.Unicode.GetBytes(msg);
 
