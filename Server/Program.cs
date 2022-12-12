@@ -24,7 +24,7 @@ namespace AServer
 
         private Dictionary<string, Socket> connectedClients = new();        // 소켓 값이 들어간다
 
-        public Dictionary<string, Socket> ConnectedClients      
+        public Dictionary<string, Socket> ConnectedClients
         {
             get => connectedClients;
             set => connectedClients = value;
@@ -38,7 +38,7 @@ namespace AServer
         Server()        // new Server 하는 순간 Server 생성자가 호출
         {
             ServerSocket = new(
-                AddressFamily.InterNetwork,     
+                AddressFamily.InterNetwork,
                 SocketType.Stream,
                 ProtocolType.Tcp
             );
@@ -130,19 +130,36 @@ namespace AServer
 
                 connectedClients.Add(fromID, s);
 
-                message = $"ID: {fromID} 유저가 끝말잇기에 참가하였습니다.";
-                s.Send(Encoding.Unicode.GetBytes("끝말잇기 채팅방에 입장하였습니다!"));
+                message = $"ID: {fromID} 유저가 채팅방에 참가하였습니다.";
+                s.Send(Encoding.Unicode.GetBytes("채팅방에 입장하였습니다!"));
                 Broadcast(s, message);
             }
 
-            else if (code.Equals("BR"))
+            else if (code.Equals("SOS"))
             {
-                fromID= tokens[1].Trim();
-                string msg = tokens[2];
-                Console.WriteLine("{0} 유저의 답: {1}", fromID, msg);
-                m = "[" + fromID+ "]님의 응답: " + msg;
-                Broadcast(s, m);
-                s.Send(Encoding.Unicode.GetBytes("끝말잇기 응답 성공"));
+                fromID = tokens[1].Trim();
+                message = $"[{fromID} 유저가 도움말을 요청하였습니다.";
+                Console.WriteLine(message);
+                s.Send(Encoding.Unicode.GetBytes("도움말 요청 성공"));
+            }
+
+            else if (code.Equals("LIST"))
+            {
+                List<string> uList = new List<string>(connectedClients.Keys);
+                fromID = tokens[1].Trim();
+                message = $"[{fromID}] 유저가 회원 리스트 보기를 요청하였습니다.";
+                Console.WriteLine(message);
+
+                for (int i = 0; i < uList.Count; i++)
+                {
+                    if (uList[i] == fromID)
+                    {
+                        uList.RemoveAt(i);
+                    }
+                }
+                string[] userList = uList.ToArray();
+                Console.Write("회원 리스트: {0}", userList);
+                s.Send(Encoding.Unicode.GetBytes("회원 리스트 요청 성공"));
             }
 
             else if (code.Equals("TO"))
@@ -156,6 +173,16 @@ namespace AServer
 
                 SendTo(toID, m);
                 s.Send(Encoding.Unicode.GetBytes("귓속말 전송 성공"));
+            }
+
+            else if (code.Equals("BR"))
+            {
+                fromID = tokens[1].Trim();
+                string msg = tokens[2];
+                Console.WriteLine("{0} 유저의 메시지: {1}", fromID, msg);
+                m = "[" + fromID + "]님의 메시지: " + msg;
+                Broadcast(s, m);
+                s.Send(Encoding.Unicode.GetBytes("전체 전송 성공"));
             }
 
             else if (code.Equals("KICK"))
@@ -178,12 +205,13 @@ namespace AServer
                         socket.Disconnect(false);
                         socket.Close();
                     }
-                } catch (Exception ex)
+                }
+                catch (Exception ex)
                 {
                     Console.WriteLine(ex.ToString());
                 }
-               
-                message = toID+"님이 강퇴 처리 되어 서버를 떠났습니다.";
+
+                message = toID + "님이 강퇴 처리 되어 서버를 떠났습니다.";
                 Console.WriteLine(message);
                 Broadcast(s, message);
                 s.Send(Encoding.Unicode.GetBytes("강퇴 요청 처리 완료"));
