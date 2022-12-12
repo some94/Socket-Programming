@@ -6,7 +6,7 @@ namespace Client
 {
     public class Client
     {
-        private readonly static int BufferSize = 4096;
+        private const int BufferSize = 4096;
 
         public static void Main()
         {
@@ -64,8 +64,7 @@ namespace Client
 
                 string str = Encoding.Unicode.GetString(data);
                 str = str.Replace("\0", "").Trim();
-                string[] tokens = str.Split(":");
-                Console.WriteLine(str); // 여기서 Server 처럼 Split 해서 포멧 바꾸면 됨
+                Console.WriteLine("-" + str); // 여기서 Server 처럼 Split 해서 포멧 바꾸면 됨
 
                 SocketAsyncEventArgs args = new SocketAsyncEventArgs();
                 args.Completed += new EventHandler<SocketAsyncEventArgs>(Received);
@@ -96,7 +95,7 @@ namespace Client
                 + "4. 전체 전송 메시지 보내기 --> BR:메시지 내용 \n"
                 + "5. 채팅방 나가기 --> EXIT:본인ID \n"
                 + "6. 강퇴 하기 --> KICK:강퇴할 상대방ID\n"
-                + "--------------------------------------------------------------------\n\n", nameID);
+                + "--------------------------------------------------------------------\n\n", nameID.Trim());
             do
             {
                 byte[] data;
@@ -116,7 +115,7 @@ namespace Client
                 + "4. 전체 전송 메시지 보내기 --> BR:메시지 내용 \n"
                 + "5. 채팅방 나가기 --> EXIT:본인ID \n"
                 + "6. 강퇴 하기 --> KICK:강퇴할 상대방ID\n"
-                + "--------------------------------------------------------------------\n\n", tokens[1]);
+                + "--------------------------------------------------------------------\n\n", tokens[1].Trim());
                     try { ClientSocket.Send(data); } catch { }
                 }
 
@@ -132,7 +131,7 @@ namespace Client
                 {
                     m = "TO:" + nameID + ":" + tokens[1] + ":" + tokens[2];
                     data = Encoding.Unicode.GetBytes(m);
-                    Console.WriteLine("[{0}님에게 귓속말 전송 완료] - 보낸 내용: {1}", tokens[1], tokens[2]);
+                    Console.WriteLine("[{0}님에게 귓속말 전송 완료] - 보낸 내용: {1}", tokens[1].Trim(), tokens[2]);
                     try { ClientSocket.Send(data); } catch { }
                 }
 
@@ -148,7 +147,7 @@ namespace Client
                 {
                     m = "TO:" + nameID + ":" + tokens[1] + ":" + tokens[2];
                     data = Encoding.Unicode.GetBytes(m);
-                    Console.WriteLine("[{0}님에게 귓속말 전송 완료] - 보낸 내용: {1}", tokens[1], tokens[2]);
+                    Console.WriteLine("[{0}님에게 귓속말 전송 완료] - 보낸 내용: {1}", tokens[1].Trim(), tokens[2]);
                     try { ClientSocket.Send(data); } catch { }
                 }
 
@@ -156,7 +155,7 @@ namespace Client
                 {
                     m = "KICK:" + tokens[1];
                     data = Encoding.Unicode.GetBytes(m);
-                    Console.WriteLine("[강퇴 요청이 접수되었습니다] - 대상자: {0}", tokens[1]);
+                    Console.WriteLine("[강퇴 요청이 접수되었습니다] - 대상자: {0}", tokens[1].Trim());
                     try { ClientSocket.Send(data); } catch { }
                 }
             } while (true);

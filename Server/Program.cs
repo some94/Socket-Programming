@@ -34,6 +34,7 @@ namespace Server
         private readonly IPEndPoint EndPoint = new(IPAddress.Parse("127.0.0.1"), 5001);
 
         int clientNum;
+        
         Server()        // new Server 하는 순간 Server 생성자가 호출
         {
             ServerSocket = new(
@@ -112,8 +113,13 @@ namespace Server
 
         void MessageProc(Socket s, byte[] bytes)
         {
+            List<string> uList = new List<string>(connectedClients.Keys);
             string m = Encoding.Unicode.GetString(bytes);
             string[] tokens = m.Split(':');
+            for (int i = 0; i < tokens.Length; i++)
+            {
+                tokens[i] = tokens[i].Replace("\0", "").Trim();
+            }
             string message;
 
             string fromID;
@@ -124,7 +130,7 @@ namespace Server
             if (code.Equals("ID"))
             {
                 clientNum++;
-                fromID = tokens[1].Trim();
+                fromID = tokens[1];
                 Console.WriteLine("[{0}번 유저] ID: {1} - {2}", clientNum, fromID, s.RemoteEndPoint);
 
                 connectedClients.Add(fromID, s);
@@ -136,18 +142,16 @@ namespace Server
 
             else if (code.Equals("SOS"))
             {
-                fromID = tokens[1].Trim();
-                message = $"[{fromID} 유저가 도움말을 요청하였습니다.";
-                Console.WriteLine(message);
+                fromID = tokens[1];
+                Console.WriteLine("\n{0} 유저가 도움말을 요청하였습니다.", fromID);
                 s.Send(Encoding.Unicode.GetBytes("도움말 요청 성공"));
             }
 
             else if (code.Equals("LIST"))
             {
-                List<string> uList = new List<string>(connectedClients.Keys);
-                fromID = tokens[1].Trim();
+                fromID = tokens[1];
                 message = $"[{fromID}] 유저가 회원 리스트 보기를 요청하였습니다.";
-                Console.WriteLine(message);
+                Console.WriteLine("\n" + message);
 
                 for (int i = 0; i < uList.Count; i++)
                 {
@@ -157,14 +161,18 @@ namespace Server
                     }
                 }
                 string[] userList = uList.ToArray();
-                Console.Write("회원 리스트: {0}", userList);
+                Console.Write("회원 리스트 목록:");
+                for (int i = 0; i < userList.Length; i++)
+                {
+                    Console.Write("{0} ", userList[i]);
+                }
                 s.Send(Encoding.Unicode.GetBytes("회원 리스트 요청 성공"));
             }
 
             else if (code.Equals("TO"))
             {
-                fromID = tokens[1].Trim();
-                toID = tokens[2].Trim();
+                fromID = tokens[1];
+                toID = tokens[2];
                 string msg = tokens[3];
                 string rMsg = "[" + fromID + "]님이 [" + toID + "]님에게 귓속말을 전송하였습니다. \n"
                     + "귓속말 내용: " + msg;
@@ -176,7 +184,7 @@ namespace Server
 
             else if (code.Equals("BR"))
             {
-                fromID = tokens[1].Trim();
+                fromID = tokens[1];
                 string msg = tokens[2];
                 Console.WriteLine("{0} 유저의 메시지: {1}", fromID, msg);
                 m = "[" + fromID + "]님의 메시지: " + msg;
@@ -186,34 +194,51 @@ namespace Server
 
             else if (code.Equals("KICK"))
             {
-                Socket socket;
-                toID = tokens[1];
+                string kickID = tokens[1];
                 try
                 {
-                    if (connectedClients.ContainsKey(toID))
+                    string kickMsg = kickID + "님이 강퇴당했습니다.";
+                    connectedClients[kickID].Send(Encoding.Unicode.GetBytes("강퇴당했습니다."));
+                    connectedClients.Remove(kickID);
+                    clientNum--;
+                    Broadcast(s, kickMsg);
+                    s.Send(Encoding.Unicode.GetBytes("강퇴 처리 완료"));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.ToString());
+                }
+                /* Socket socket;
+                string kickID = tokens[1];
+                try
+                {
+                    if (connectedClients.ContainsKey(kickID))
                     {
-                        connectedClients.TryGetValue(toID, out socket!);
+                        connectedClients.TryGetValue(kickID, out socket!);
                         foreach (KeyValuePair<string, Socket> clients in connectedClients)
                         {
                             if (clients.Value == socket)
                             {
                                 ConnectedClients.Remove(clients.Key);
                                 clientNum--;
+                                socket.Disconnect(false);
+                                socket.Close();
                             }
                         }
-                        socket.Disconnect(false);
-                        socket.Close();
+                        message = kickID + "님이 강퇴 처리 되어 서버를 떠났습니다.";
+                        Console.WriteLine(message);
+                        Broadcast(s, message);
+                        s.Send(Encoding.Unicode.GetBytes("강퇴 요청 처리 완료"));
+                    }
+                    else
+                    {
+                        Console.WriteLine("강퇴할 ID를 가진 사용자가 존재하지 않습니다.");
                     }
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine(ex.ToString());
-                }
-
-                message = toID + "님이 강퇴 처리 되어 서버를 떠났습니다.";
-                Console.WriteLine(message);
-                Broadcast(s, message);
-                s.Send(Encoding.Unicode.GetBytes("강퇴 요청 처리 완료"));
+                } */
             }
 
             else
@@ -228,6 +253,10 @@ namespace Server
             byte[] bytes = Encoding.Unicode.GetBytes(msg);
             string m = Encoding.Unicode.GetString(bytes);
             string[] tokens = m.Split(":");
+            for (int i = 0; i < tokens.Length; i++)
+            {
+                tokens[i] = tokens[i].Replace("\0", "").Trim();
+            }
             string message = tokens[1] + "님의 귓속말: " + tokens[3];
             byte[] data = Encoding.Unicode.GetBytes(message);
 
